@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MyERC721Token {
+    string public name;
+    string public symbol;
+    
+    uint256 private nextTokenId;
+    mapping(uint256 => address) public ownerOf;
+    mapping(address => uint256[]) public ownedTokens;
+
+    event Transfer(address indexed from, address indexed to, uint256 tokenId);
+
+    constructor(string memory _name, string memory _symbol) {
+        name = _name;
+        symbol = _symbol;
+    }
+
+    function mint() external {
+        uint256 tokenId = nextTokenId;
+        nextTokenId++;
+        
+        ownerOf[tokenId] = msg.sender;
+        ownedTokens[msg.sender].push(tokenId);
+        
+        emit Transfer(address(0), msg.sender, tokenId);
+    }
+
+    function transfer(address to, uint256 tokenId) external {
+        require(ownerOf[tokenId] == msg.sender, "ERC721: sender is not the owner");
+        require(to != address(0), "ERC721: transfer to the zero address");
+
+        // Transfer ownership
+        ownerOf[tokenId] = to;
+        
+        // Update ownedTokens mappings
+        uint256[] storage fromTokens = ownedTokens[msg.sender];
+        for (uint256 i = 0; i < fromTokens.length; i++) {
+            if (fromTokens[i] == tokenId) {
+                fromTokens[i] = fromTokens[fromTokens.length - 1];
+                fromTokens.pop();
+                break;
+            }
+        }
+        ownedTokens[to].push(tokenId);
+
+        emit Transfer(msg.sender, to, tokenId);
+    }
+}
